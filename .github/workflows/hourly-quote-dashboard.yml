@@ -78,9 +78,8 @@ jobs:
       
       - name: Create Pull Request
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}  # Personal Access Token
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          gh auth login --with-token <<< "$GH_TOKEN"
           gh pr create \
             -H "$BRANCH" \
             -B "main" \
@@ -91,7 +90,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          gh auth login --with-token <<< "$GH_TOKEN"
           PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
           if [ "$PR_NUMBER" != "null" ]; then
             gh pr merge "$PR_NUMBER" --squash --delete-branch --admin
