@@ -81,10 +81,11 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           gh pr create \
-            -H "$BRANCH" \
-            -B "main" \
-            -t "Add meaningful quote #${GITHUB_RUN_ID}" \
-            -b "$QUOTE"
+          -R "Pandiyarajk/quotes" \
+          -H "$BRANCH" \
+          -B "main" \
+          -t "Add meaningful quote #${GITHUB_RUN_ID}" \
+          -b "$QUOTE"
       
       - name: Merge Pull Request
         env:
