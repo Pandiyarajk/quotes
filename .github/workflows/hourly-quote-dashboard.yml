@@ -1,0 +1,132 @@
+name: Hourly Quote PR + Dashboard
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # every hour
+  workflow_dispatch:
+
+jobs:
+  quote-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "Pandiyaraj"
+          git config --global user.email "39190205+Pandiyarajk@users.noreply.github.com"
+          
+      - name: Load workflow state
+        id: state
+        run: |
+          COUNTER_FILE="run_count.txt"
+          DATE_FILE="start_date.txt"
+
+          # Handle missing files
+          if [ ! -f "$COUNTER_FILE" ]; then
+            echo 0 > "$COUNTER_FILE"
+            git add "$COUNTER_FILE"
+            git commit -m "Initialize run count" || echo "No changes"
+            git push || echo "Push failed"
+          fi
+          if [ ! -f "$DATE_FILE" ]; then
+            date -I > "$DATE_FILE"
+            git add "$DATE_FILE"
+            git commit -m "Initialize start date" || echo "No changes"
+            git push || echo "Push failed"
+          fi
+
+          RUN_COUNT=$(cat "$COUNTER_FILE")
+          START_DATE=$(cat "$DATE_FILE")
+          DAYS_ELAPSED=$(( ( $(date +%s) - $(date -d "$START_DATE" +%s) ) / 86400 ))
+          echo "run_count=$RUN_COUNT" >> $GITHUB_ENV
+          echo "days_elapsed=$DAYS_ELAPSED" >> $GITHUB_ENV
+
+      - name: Check limits
+        run: |
+          if [ "$run_count" -ge 1024 ]; then
+            echo "Run limit reached. Exiting"; exit 0
+          fi
+          if [ "$days_elapsed" -ge 42 ]; then
+            echo "Day limit reached. Exiting"; exit 0
+          fi
+
+      - name: Fetch random quote
+        id: quote
+        run: |
+          QUOTE=$(curl -s https://zenquotes.io/api/random | jq -r '.[0].q + " — " + .[0].a')
+          echo "QUOTE=$QUOTE" >> $GITHUB_ENV
+
+      - name: Create branch and file
+        run: |
+          BRANCH="quote-${GITHUB_RUN_ID}"
+          git checkout -b $BRANCH
+          FILE="quote_${GITHUB_RUN_ID}.txt"
+          echo "$QUOTE" > "$FILE"
+          git add "$FILE"
+          git commit -m "Add meaningful quote #${GITHUB_RUN_ID}"
+          git push origin $BRANCH
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --head $BRANCH \
+            --base main \
+            --title "Add meaningful quote #${GITHUB_RUN_ID}" \
+            --body "This PR adds a meaningful quote: $QUOTE"
+
+      - name: Merge Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list --head $BRANCH --json number --jq '.[0].number')
+          if [ "$PR_NUMBER" != "null" ]; then
+            gh pr merge $PR_NUMBER --squash --delete-branch --admin
+            echo "Merged PR #$PR_NUMBER successfully"
+          else
+            echo "No PR found to merge"
+          fi
+
+      - name: Update run count
+        run: |
+          COUNTER_FILE="run_count.txt"
+          RUN_COUNT=$((run_count + 1))
+          echo $RUN_COUNT > "$COUNTER_FILE"
+          git add "$COUNTER_FILE"
+          git commit -m "Update run count to $RUN_COUNT"
+          git push
+
+      - name: Update quotes.json
+        run: |
+          FILES=$(ls quote_*.txt | sort -V)
+          echo "[" > quotes.json
+          COUNT=$(echo "$FILES" | wc -l)
+          IDX=0
+          for F in $FILES; do
+            QUOTE_CONTENT=$(cat "$F" | jq -Rs .)
+            echo "{\"content\": $QUOTE_CONTENT, \"author\": \"Zen Quotes\"}" >> quotes.json
+            IDX=$((IDX+1))
+            if [ "$IDX" -lt "$COUNT" ]; then
+              echo "," >> quotes.json
+            fi
+          done
+          echo "]" >> quotes.json
+          git add quotes.json
+          git commit -m "Update quotes.json for dashboard"
+          git push
+
+      - name: Deploy GitHub Pages
+        run: |
+          mkdir -p docs
+          cp quotes.json docs/
+          cp .github/pages/index.html docs/
+          git add docs/
+          git commit -m "Update GitHub Pages dashboard"
+          git push
