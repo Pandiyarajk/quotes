@@ -71,11 +71,12 @@ jobs:
           git add "$FILE"
           git commit -m "Add meaningful quote #${GITHUB_RUN_ID}"
           git push origin $BRANCH
-
+      
       - name: Create Pull Request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}  # Personal Access Token
         run: |
+          gh auth login --with-token <<< "$GH_TOKEN"
           gh pr create \
             -H "$BRANCH" \
             -B "main" \
