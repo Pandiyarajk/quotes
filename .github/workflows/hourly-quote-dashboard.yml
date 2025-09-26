@@ -5,6 +5,10 @@ on:
     - cron: "0 * * * *"  # every hour
   workflow_dispatch:
 
+permissions:
+  contents: write     # allows pushing commits
+  pull-requests: write  # needed for managing PRs if using a PAT
+
 jobs:
   quote-pr:
     runs-on: ubuntu-latest
@@ -82,14 +86,15 @@ jobs:
             -B "main" \
             -t "Add meaningful quote #${GITHUB_RUN_ID}" \
             -b "$QUOTE"
-
+      
       - name: Merge Pull Request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          PR_NUMBER=$(gh pr list --head $BRANCH --json number --jq '.[0].number')
+          gh auth login --with-token <<< "$GH_TOKEN"
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
           if [ "$PR_NUMBER" != "null" ]; then
-            gh pr merge $PR_NUMBER --squash --delete-branch --admin
+            gh pr merge "$PR_NUMBER" --squash --delete-branch --admin
             echo "Merged PR #$PR_NUMBER successfully"
           else
             echo "No PR found to merge"
