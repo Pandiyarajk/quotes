@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hourly Quotes Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #4f46e5;
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .quote-card {
+      background: white;
+      margin: 1rem 0;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .quote-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .quote-text {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .quote-author {
+      font-size: 0.9rem;
+      color: #555;
+      text-align: right;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+    }
+
+    .pagination button {
+      margin: 0 5px;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #4f46e5;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .pagination button:hover {
+      background-color: #3730a3;
+    }
+
+    .pagination button:disabled {
+      background-color: #a5b4fc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Hourly Motivational Quotes</h1>
+</header>
+
+<div class="container" id="quotes"></div>
+
+<div class="pagination">
+  <button id="prevBtn">Previous</button>
+  <button id="nextBtn">Next</button>
+</div>
+
+<script>
+  const quotesPerPage = 5; // number of quotes per page
+  let currentPage = 1;
+  let quotesData = [];
+
+  async function loadQuotes() {
+    try {
+      const response = await fetch('quotes.json');
+      quotesData = await response.json();
+      renderQuotes();
+    } catch (error) {
+      console.error("Failed to load quotes:", error);
+      document.getElementById('quotes').innerHTML = "<p>Error loading quotes.</p>";
+    }
+  }
+
+  function renderQuotes() {
+    const container = document.getElementById('quotes');
+    container.innerHTML = '';
+
+    const start = (currentPage - 1) * quotesPerPage;
+    const end = start + quotesPerPage;
+    const pageQuotes = quotesData.slice(start, end);
+
+    pageQuotes.forEach(q => {
+      const card = document.createElement('div');
+      card.className = 'quote-card';
+      card.innerHTML = `
+        <p class="quote-text">${q.content}</p>
+        <p class="quote-author">— ${q.author}</p>
+      `;
+      container.appendChild(card);
+    });
+
+    document.getElementById('prevBtn').disabled = currentPage === 1;
+    document.getElementById('nextBtn').disabled = end >= quotesData.length;
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderQuotes();
+    }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if ((currentPage * quotesPerPage) < quotesData.length) {
+      currentPage++;
+      renderQuotes();
+    }
+  });
+
+  loadQuotes();
+</script>
+
+</body>
+</html>
