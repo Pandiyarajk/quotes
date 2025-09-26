@@ -130,8 +130,7 @@ jobs:
       - name: Deploy GitHub Pages
         run: |
           mkdir -p docs
-          cp quotes.json docs/
-          cp .github/pages/index.html docs/
+          cp quotes.json docs/          
           git add docs/
           git commit -m "Update GitHub Pages dashboard"
           git push
