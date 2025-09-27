@@ -3,7 +3,7 @@ name: External Trigger
 on:
   workflow_dispatch:
     inputs:
-      runner:
+      mode:
         description: 'Select execution mode'
         required: true
         type: choice
