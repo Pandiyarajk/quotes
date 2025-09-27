@@ -19,6 +19,6 @@ jobs:
       - name: Print received input
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo Type: ${{ github.event.inputs.type }} 
+          echo Type: ${{ github.event.inputs.mode }} 
           echo "Event name: ${{ github.event_name }}"
           
