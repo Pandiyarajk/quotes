@@ -15,10 +15,10 @@ on:
 jobs:
   echo-inputs:
     runs-on: windows-latest  # You can also use ubuntu-latest
-    steps:      
+    steps:
       - name: Print received input
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo Type: ${{ github.event.inputs.mode }} 
+          echo Mode: ${{ github.event.inputs.mode }} 
           echo "Event name: ${{ github.event_name }}"
           
